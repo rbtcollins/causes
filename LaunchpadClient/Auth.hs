@@ -108,8 +108,8 @@ untilAuthorized :: (MonadIO m, Ord a, Num a)
                 -> OA.Credential
                 -> a
                 -> m OA.Credential
-untilAuthorized manager lpoauth temp_creds tries = do
-    maybe_access_token <- OA.getAccessTokenWith $ (OA.defaultAccessTokenRequest lpoauth temp_creds manager) {
+untilAuthorized manager a_lpoauth temp_creds tries = do
+    maybe_access_token <- OA.getAccessTokenWith $ (OA.defaultAccessTokenRequest a_lpoauth temp_creds manager) {
         OA.accessTokenAddAuth = OA.addAuthBody
         , OA.accessTokenRequestHook = \req -> req { checkStatus = checkFor401 }}
     case maybe_access_token of
@@ -117,7 +117,7 @@ untilAuthorized manager lpoauth temp_creds tries = do
        if tries > 0
          then do
            liftIO $ threadDelay 1000000 -- Don't spam the server.
-           untilAuthorized manager lpoauth temp_creds (tries - 1)
+           untilAuthorized manager a_lpoauth temp_creds (tries - 1)
          else
            liftIO . throwIO . OA.OAuthException $ "Gaining OAuth Token Credential Failed: " ++ BSL.unpack (responseBody error_response)
       Right access_token -> return access_token

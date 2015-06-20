@@ -18,6 +18,7 @@ library
                      Import
                      Import.NoFoundation
                      LaunchpadClient.Auth
+                     LaunchpadClient.Token
                      Model
                      Settings
                      Settings.StaticFiles

@@ -17,6 +17,7 @@ library
                      Foundation
                      Import
                      Import.NoFoundation
+                     LaunchpadClient.Auth
                      Model
                      Settings
                      Settings.StaticFiles
@@ -76,11 +77,15 @@ library
                  , fast-logger                   >= 2.2        && < 2.4
                  , wai-logger                    >= 2.2        && < 2.3
                  , file-embed
+                 , random
                  , safe
                  , unordered-containers
                  , containers
                  , vector
                  , time
+                 , http-types
+                 , authenticate-oauth
+                 , mtl
 
 executable         causes
     if flag(library-only)

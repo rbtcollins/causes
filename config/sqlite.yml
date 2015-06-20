@@ -1,0 +1,20 @@
+Default: &defaults
+  database: causes.sqlite3
+  poolsize: 10
+
+Development:
+  <<: *defaults
+
+Testing:
+  database: causes_test.sqlite3
+  <<: *defaults
+
+Staging:
+  database: causes_staging.sqlite3
+  poolsize: 100
+  <<: *defaults
+
+Production:
+  database: causes_production.sqlite3
+  poolsize: 100
+  <<: *defaults

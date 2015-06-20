@@ -1,0 +1,2 @@
+database:
+  database: causes_test.sqlite3

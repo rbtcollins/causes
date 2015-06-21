@@ -1,0 +1,10 @@
+<h1>Connecting to LP
+
+  <p #form>
+    $maybe () <- submission
+      <div .message .alert .alert-success>
+        <!-- <em>#{url}</em> -->
+    <form method=post action=@{LPConnectR}#form enctype=#{formEnctype}>
+      ^{formWidget}
+      <button .btn .btn-primary type="submit">
+         Connect

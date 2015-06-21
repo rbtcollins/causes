@@ -27,13 +27,21 @@
     This is an example trivial Form. Read the #
     \<a href="http://www.yesodweb.com/book/forms">Forms chapter<span class="glyphicon glyphicon-bookmark"></span></a> #
     on the yesod book to learn more about them.
-    $maybe (info,con) <- submission
+    $maybe (info,con,openid) <- submission
       <div .message .alert .alert-success>
-        Your file's type was <em>#{fileContentType info}</em>. You say it has: <em>#{con}</em>
+        Your file's type was <em>#{fileContentType info}</em>. You say it has: <em>#{con}</em> Your URL is #{openid}.
     <form method=post action=@{HomeR}#form enctype=#{formEnctype}>
       ^{formWidget}
       <button .btn .btn-primary type="submit">
          Send it! <span class="glyphicon glyphicon-upload"></span>
+  <hr />
+
+  <li #form>
+    Connect to Launchpad.
+    <form method=post action=@{LPConnectR}#form enctype=#{connectEnctype}>
+      ^{connectWidget}
+      <button .btn .btn-primary type="submit">
+         Connect
   <hr />
 
   <li> And last but not least, Testing. In <em>tests/main.hs</em> you will find a #

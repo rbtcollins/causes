@@ -3,6 +3,10 @@ module Handler.Home where
 import Import
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3,
                               withSmallInput)
+import Handler.LPConnect
+
+type MyForm = (FileInfo, Text, Text)
+--  deriving (Eq, Ord, Read, Show)
 
 -- This is a handler function for the GET request method on the HomeR
 -- resource pattern. All of your resource patterns are defined in
@@ -14,7 +18,8 @@ import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3,
 getHomeR :: Handler Html
 getHomeR = do
     (formWidget, formEnctype) <- generateFormPost sampleForm
-    let submission = Nothing :: Maybe (FileInfo, Text)
+    (connectWidget, connectEnctype) <- generateFormGet' connectForm
+    let submission = Nothing :: Maybe MyForm
         handlerName = "getHomeR" :: Text
     defaultLayout $ do
         aDomId <- newIdent
@@ -24,6 +29,7 @@ getHomeR = do
 postHomeR :: Handler Html
 postHomeR = do
     ((result, formWidget), formEnctype) <- runFormPost sampleForm
+    (connectWidget, connectEnctype) <- generateFormGet' connectForm
     let handlerName = "postHomeR" :: Text
         submission = case result of
             FormSuccess res -> Just res
@@ -34,7 +40,8 @@ postHomeR = do
         setTitle "Welcome To Yesod!"
         $(widgetFile "homepage")
 
-sampleForm :: Form (FileInfo, Text)
-sampleForm = renderBootstrap3 BootstrapBasicForm $ (,)
+sampleForm :: Form MyForm
+sampleForm = renderBootstrap3 BootstrapBasicForm $ (,,)
     <$> fileAFormReq "Choose a file"
     <*> areq textField (withSmallInput "What's on the file?") Nothing
+    <*> areq textField (withSmallInput "Your OpenID URL") Nothing

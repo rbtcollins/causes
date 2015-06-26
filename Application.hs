@@ -34,6 +34,9 @@ import Handler.Common
 import Handler.Home
 import Handler.LPConnect
 
+-- More migrations
+import qualified LaunchpadClient.Auth as LPAuth (migrateAll)
+
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
 -- comments there for more details.
@@ -72,6 +75,7 @@ makeFoundation appSettings = do
 
     -- Perform database migration using our application's logging settings.
     runLoggingT (runSqlPool (runMigration migrateAll) pool) logFunc
+    runLoggingT (runSqlPool (runMigration LPAuth.migrateAll) pool) logFunc
 
     -- Return the foundation
     return $ mkFoundation pool

@@ -12,6 +12,7 @@ module LaunchpadClient.Auth (
     lpoauth,
     maybeToken,
     migrateAll,
+    tempOrAccessToken,
     ) where
 
 
@@ -26,6 +27,8 @@ import Debug.Trace
 import qualified Data.Text as DT
 -- import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans
+import Control.Monad.Trans.Reader as Reader (ReaderT)
+import Control.Monad.Trans.Control as Control (MonadBaseControl)
 -- import Data.Maybe
 import Database.Persist
 import Database.Persist.Sqlite
@@ -76,9 +79,9 @@ safeShowToken :: Token -> String
 safeShowToken (Temporary creds) = safeShowCreds creds
 safeShowToken (Access creds) = safeShowCreds creds
 
-tempOrAccessToken :: IO Token
+tempOrAccessToken :: (Control.MonadBaseControl IO m, MonadIO m) => ReaderT SqlBackend m Token
 tempOrAccessToken = 
-  runSqlite serverFile $ do
+  do
         maybeServer <- getBy $ UniqueServer "Launchpad"
         case maybeServer of
             Nothing -> do
@@ -91,7 +94,7 @@ tempOrAccessToken =
 
 maybeToken :: IO (Maybe OA.Credential)
 maybeToken =  do
-  a_token <- liftIO tempOrAccessToken
+  a_token <- liftIO $ runSqlite serverFile $ tempOrAccessToken
   case a_token of
     -- Try for 30 seconds (interactive testing/watching logfiles - probably
     -- want to discard if in a real app and just drive the state machine)

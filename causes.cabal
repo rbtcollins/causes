@@ -88,6 +88,7 @@ library
                  , http-types
                  , authenticate-oauth
                  , mtl
+                 , transformers
 
 executable         causes
     if flag(library-only)

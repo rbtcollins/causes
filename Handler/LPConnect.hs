@@ -3,6 +3,8 @@ module Handler.LPConnect where
 import Import
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3)
 
+import LaunchpadClient.Auth (tempOrAccessToken)
+
 type ConnectForm = ()
 
 getLPConnectR :: Handler Html
@@ -20,6 +22,8 @@ postLPConnectR = do
     let submission = case result of
             FormSuccess res -> Just res
             _ -> Nothing
+
+    token <- runDB tempOrAccessToken
 
     defaultLayout $ do
         aDomId <- newIdent

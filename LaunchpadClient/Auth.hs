@@ -12,6 +12,8 @@ module LaunchpadClient.Auth (
     lpoauth,
     maybeToken,
     migrateAll,
+    removeToken,
+    safeShowToken,
     tempOrAccessToken,
     ) where
 
@@ -104,6 +106,10 @@ maybeToken =  do
           updateWhere [ServerName ==. "Launchpad"] [ServerCredentials =. Access access_token]
         return $ trace ("authorized token " ++ safeShowCreds access_token) (Just access_token)
     Access token -> return (Just token)
+
+removeToken :: MonadIO m => ReaderT SqlBackend m ()
+removeToken = do
+  deleteWhere [ServerName ==. "Launchpad"]
 
 untilAuthorized :: (MonadIO m, Ord a, Num a)
                 => Manager

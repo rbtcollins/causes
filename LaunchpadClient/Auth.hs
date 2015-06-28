@@ -81,22 +81,24 @@ safeShowToken :: Token -> String
 safeShowToken (Temporary creds) = safeShowCreds creds
 safeShowToken (Access creds) = safeShowCreds creds
 
-tempOrAccessToken :: (Control.MonadBaseControl IO m, MonadIO m) => ReaderT SqlBackend m Token
-tempOrAccessToken = 
+tempOrAccessToken :: (Control.MonadBaseControl IO m, MonadIO m) =>
+                     OA.OAuth ->
+                     ReaderT SqlBackend m Token
+tempOrAccessToken oa =
   do
         maybeServer <- getBy $ UniqueServer "Launchpad"
         case maybeServer of
             Nothing -> do
-                temp_creds <- trace "requesting temporary credentials" (withManager $ \manager -> OA.getTemporaryCredential lpoauth manager)
+                temp_creds <- trace "requesting temporary credentials" (withManager $ \manager -> OA.getTemporaryCredential oa manager)
                 -- TODO: have something report on pending tokens for users - e.g. in a web UI
-                let msg = "New token requested, authorise at " ++ show (OA.authorizeUrl lpoauth temp_creds)
+                let msg = "New token requested, authorise at " ++ show (OA.authorizeUrl oa temp_creds)
                 _ <- insert $ trace msg (Server "Launchpad" (Temporary temp_creds))
                 return $ Temporary temp_creds
             Just (Entity _ (Server _ temp_creds)) -> trace ("using cached credentials " ++ safeShowToken temp_creds) $ return temp_creds
 
 maybeToken :: IO (Maybe OA.Credential)
 maybeToken =  do
-  a_token <- liftIO $ runSqlite serverFile $ tempOrAccessToken
+  a_token <- liftIO $ runSqlite serverFile $ tempOrAccessToken lpoauth
   case a_token of
     -- Try for 30 seconds (interactive testing/watching logfiles - probably
     -- want to discard if in a real app and just drive the state machine)

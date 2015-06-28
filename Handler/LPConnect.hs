@@ -8,6 +8,10 @@ import qualified Web.Authenticate.OAuth as OA
 import LaunchpadClient.Auth (lpoauth, removeToken, safeShowToken, tempOrAccessToken)
 import LaunchpadClient.Token (Token(Access, Temporary))
 
+-- TODO: figure out how to find out 'this pages URI'
+lpwebauth :: OA.OAuth
+lpwebauth = lpoauth { OA.oauthCallback = Just "http://localhost:3000/connect" }
+
 type ConnectForm = ()
 
 getLPConnectR :: Handler Html
@@ -26,7 +30,7 @@ postLPConnectR = do
     action <- lookupPostParam "action"
     case (result, action) of
         (FormSuccess res, Just "connect") -> do
-            _token <- runDB tempOrAccessToken
+            _token <- runDB $ tempOrAccessToken lpwebauth
             let submission = res
                 temp_token = case _token of
                   Temporary temp_creds -> Just temp_creds

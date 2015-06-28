@@ -3,7 +3,8 @@
   <p #form>
     $maybe (temp_token) <- temp_token
       <div .message .alert .alert-success>
-        <em>#{show $ OA.authorizeUrl lpwebauth temp_token}
+        <em>
+          <a href=#{OA.authorizeUrl lpwebauth temp_token}>Click to authorize to LP.
     <form method=post action=@{LPConnectR}#form enctype=#{formEnctype}>
       ^{formWidget}
       <button .btn .btn-primary type="submit", name="action" value="connect">

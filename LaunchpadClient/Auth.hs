@@ -15,6 +15,7 @@ module LaunchpadClient.Auth (
     removeToken,
     safeShowToken,
     tempOrAccessToken,
+    tempToAccessToken,
     ) where
 
 
@@ -81,9 +82,10 @@ safeShowToken :: Token -> String
 safeShowToken (Temporary creds) = safeShowCreds creds
 safeShowToken (Access creds) = safeShowCreds creds
 
+
 tempOrAccessToken :: (Control.MonadBaseControl IO m, MonadIO m) =>
                      OA.OAuth ->
-                     ReaderT SqlBackend m Token
+                     ReaderT SqlBackend m (Bool, Token)
 tempOrAccessToken oa =
   do
         maybeServer <- getBy $ UniqueServer "Launchpad"
@@ -93,12 +95,12 @@ tempOrAccessToken oa =
                 -- TODO: have something report on pending tokens for users - e.g. in a web UI
                 let msg = "New token requested, authorise at " ++ show (OA.authorizeUrl oa temp_creds)
                 _ <- insert $ trace msg (Server "Launchpad" (Temporary temp_creds))
-                return $ Temporary temp_creds
-            Just (Entity _ (Server _ temp_creds)) -> trace ("using cached credentials " ++ safeShowToken temp_creds) $ return temp_creds
+                return $ (True, Temporary temp_creds)
+            Just (Entity _ (Server _ temp_creds)) -> trace ("using cached credentials " ++ safeShowToken temp_creds) $ return (False, temp_creds)
 
 maybeToken :: IO (Maybe OA.Credential)
 maybeToken =  do
-  a_token <- liftIO $ runSqlite serverFile $ tempOrAccessToken lpoauth
+  (new_token, a_token) <- liftIO $ runSqlite serverFile $ tempOrAccessToken lpoauth
   case a_token of
     -- Try for 30 seconds (interactive testing/watching logfiles - probably
     -- want to discard if in a real app and just drive the state machine)
@@ -113,6 +115,29 @@ removeToken :: MonadIO m => ReaderT SqlBackend m ()
 removeToken = do
   deleteWhere [ServerName ==. "Launchpad"]
 
+maybeAccessToken :: MonadIO m
+                 => Manager
+                 -> OA.OAuth
+                 -> OA.Credential
+                 -> m (Either (Response BSL.ByteString) OA.Credential)
+maybeAccessToken manager a_lpoauth temp_creds =
+  OA.getAccessTokenWith $ (OA.defaultAccessTokenRequest a_lpoauth temp_creds manager) {
+        OA.accessTokenAddAuth = OA.addAuthBody
+        , OA.accessTokenRequestHook = \req -> req { checkStatus = checkFor401 }}
+
+tempToAccessToken :: (MonadBaseControl IO m, MonadIO m)
+                  => OA.OAuth
+                  -> OA.Credential
+                  -> ReaderT SqlBackend m (Either (Response BSL.ByteString) OA.Credential)
+tempToAccessToken a_lpoauth temp_creds = do
+        maybe_access_token <- withManager $ \manager -> maybeAccessToken manager a_lpoauth temp_creds
+        case maybe_access_token of
+          Left error_response -> return $ Left error_response
+          Right access_token -> do
+            updateWhere [ServerName ==. "Launchpad"] [ServerCredentials =. Access access_token]
+            return $ trace ("authorized token " ++ safeShowCreds access_token) (Right access_token)
+
+
 untilAuthorized :: (MonadIO m, Ord a, Num a)
                 => Manager
                 -> OA.OAuth
@@ -120,9 +145,7 @@ untilAuthorized :: (MonadIO m, Ord a, Num a)
                 -> a
                 -> m OA.Credential
 untilAuthorized manager a_lpoauth temp_creds tries = do
-    maybe_access_token <- OA.getAccessTokenWith $ (OA.defaultAccessTokenRequest a_lpoauth temp_creds manager) {
-        OA.accessTokenAddAuth = OA.addAuthBody
-        , OA.accessTokenRequestHook = \req -> req { checkStatus = checkFor401 }}
+    maybe_access_token <- maybeAccessToken manager a_lpoauth temp_creds
     case maybe_access_token of
       Left error_response ->
        if tries > 0
